@@ -1,5 +1,5 @@
 const PRIZE_SETTING_STRING =
-  "特別獎|4|2|遠東集團2000元禮券/每人\n\n二獎|2|2|5萬元紅包/每人\n頭獎|1|1|東京來回機票";
+  "特別獎|4|1|遠東集團2000元禮券/每人\n\n二獎|2|1|5萬元紅包/每人\n頭獎|1|1|東京來回機票";
 const CANDIDATES_SETTING_STRING =
   "Tom, Marry, Jim, Robin \n Lucy, Lily, Lilei, Hanmeimei\nCatherine, Linton, Lockwood\nCharly, Bill, Emily, Penny\nRose, Jen, William, Philips\nHitler, Stalin";
 const KEY_NAME = " Enter鍵 ";

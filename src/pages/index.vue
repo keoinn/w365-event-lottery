@@ -52,10 +52,14 @@ import background_img from "@/assets/forestbridge.jpg";
 import Lottery from "@/utils/lottery";
 import { onKeyStroke } from "@vueuse/core";
 import lottery_bg from "@/assets/lottery_bg.webp";
+import { getLotteryCandidates } from "@/utils/requests/apis";
 
 const lottery = ref(new Lottery());
 
-onMounted(() => {
+onMounted(async () => {
+  const res = await getLotteryCandidates({ event_sn: 'bk2l1va4pf'});
+  console.log(res.data.result);
+
   lottery.value.init();
 
   onKeyStroke(["Enter", "B", "b"], () => {
