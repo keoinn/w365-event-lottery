@@ -2,7 +2,14 @@
   <div class="main-view" :style="{ backgroundImage: `url(${background_img})` }">
     <div class="event-app">
       <!-- https://png.pngtree.com/background/20210711/original/pngtree-winning-lottery-announcement-picture-image_1105179.jpg -->
-      <div class="slider-view" :style="{ backgroundImage: `url(${lottery_bg})`, backgroundSize: 'cover', backgroundPosition: 'center' }">
+      <div
+        class="slider-view"
+        :style="{
+          backgroundImage: `url(${lottery_bg})`,
+          backgroundSize: 'cover',
+          backgroundPosition: 'center',
+        }"
+      >
         <div
           class="event-title"
           v-if="lottery.title_box !== ''"
@@ -10,18 +17,29 @@
         ></div>
 
         <div id="rotate_div">
-          <transition>
-            <div
-              class="current-step-box"
-              v-if="lottery.currentStageBox !== ''"
+          <div class="welcome-box" v-if="showWelcomeBox">
+            <br />
+            <br />
+            <span class="welcome-text">活動即將開始</span>
+            <br />
+            <br />
+            <span class="welcome-text"
+              >目前共有 <span style="color: #f33;">{{ showCandidatesNum }}</span> 人報名</span
             >
+          </div>
+
+          <transition>
+            <div class="current-step-box" v-if="lottery.currentStageBox !== ''">
               {{ lottery.currentStageBox }}
             </div>
           </transition>
 
           <transition>
             <div class="rolling-board" v-if="lottery.showRotateDiv">
-              <span :class="{'has-checked-winners': lottery.hasCheckedWinners}">{{ lottery.rollingBoard }}</span>
+              <span
+                :class="{ 'has-checked-winners': lottery.hasCheckedWinners }"
+                >{{ lottery.rollingBoard }}</span
+              >
             </div>
           </transition>
 
@@ -52,51 +70,53 @@ import background_img from "@/assets/forestbridge.jpg";
 import Lottery from "@/utils/lottery";
 import { onKeyStroke } from "@vueuse/core";
 import lottery_bg from "@/assets/lottery_bg.webp";
-import { getLotteryCandidates } from "@/utils/requests/apis";
+import { getLotteryCandidates, getLotteryTicketsNums, storeLotteryFinalResults } from "@/utils/requests/apis";
 
 const lottery = ref(new Lottery());
+const showWelcomeBox = ref(true); // 歡迎訊息顯示
+const showCandidatesNum = ref("--"); // 人數
+let timer = null;
+
+const showCurrentCandidatesNum = async () => {
+  const res = await getLotteryTicketsNums({ event_sn: "bk2l1va4pf" });
+  showCandidatesNum.value = res.data.result;
+}
 
 onMounted(async () => {
-  const res = await getLotteryCandidates({ event_sn: 'bk2l1va4pf'});
-  console.log(res.data.result);
-
+  const res = await getLotteryCandidates({ event_sn: "bk2l1va4pf" });
   lottery.value.init();
+  lottery.value.updateCandidates(res.data.result);
+  showCurrentCandidatesNum();
 
-  onKeyStroke(["Enter", "B", "b"], () => {
-    if(lottery.value.next_action === "check_winners") {
+  timer = setInterval(() => {
+    showCurrentCandidatesNum()
+  }, 10000);
+
+  onKeyStroke(["Enter", "B", "b"], async () => {
+    showWelcomeBox.value = false;
+    clearInterval(timer);
+  
+    if (lottery.value.next_action === "check_winners") {
       lottery.value.hasCheckedWinners = true;
       lottery.value.process();
-    } else  {
+    } else {
       lottery.value.process();
+    }
+
+    if (lottery.value.action === "end_lottery") {
+      console.log(lottery.value.final_results);
+      const res = await storeLotteryFinalResults({ event_sn: "bk2l1va4pf", result: lottery.value.final_results });
+      console.log(res);
     }
   });
 
   onKeyStroke(["Escape"], () => {
-    if(lottery.value.next_action === "check_winners") {
+    if (lottery.value.next_action === "check_winners") {
       lottery.value.hasCheckedWinners = false;
       lottery.value.process();
     }
   });
 
-
-
-  // onKeyStroke(["Enter", "B", "b"], () => {
-  //   if(lottery.value.temp_winners.length > 0) {
-  //     lottery.value.checkWinners(true)
-  //     lottery.value.process();
-  //   } else {
-  //     lottery.value.process();
-  //   }
-  //   console.log(lottery.value.action);
-  // });
-
-  // onKeyStroke(["Escape"], () => {
-  //   console.log("Before", lottery.value)
-  //   if(lottery.value.temp_winners.length > 0) {
-  //     lottery.value.checkWinners(false)
-  //   }
-  //   console.log("After", lottery.value)
-  // });
 });
 </script>
 
@@ -108,7 +128,7 @@ $text-color: #333;
 
 .v-enter-active,
 .v-leave-active {
-  transition: opacity 0.5s ease;
+  transition: opacity 0.4s ease;
 }
 
 .v-enter-from,
@@ -139,6 +159,7 @@ $text-color: #333;
       margin: 26px;
       padding: 0;
       font-size: 56px;
+      font-weight: bold;
       text-align: center;
 
       .event-title-text {
@@ -170,6 +191,13 @@ $text-color: #333;
       .has-checked-winners {
         color: #f33 !important;
       }
+    }
+
+    .welcome-box {
+      line-height: 42px;
+      font-size: 42px;
+      font-weight: bold;
+      color: $text-color;
     }
 
     .current-step-box {
@@ -206,13 +234,17 @@ $text-color: #333;
         // background: $text-background-color;
       }
       .winner {
-        color: #f33;
+        color: rgb(255, 51, 61);
+
+        .winner-name {
+          background-color: yellow;
+        }
       }
 
       table {
         margin: 12px auto;
         border-collapse: collapse;
-        width: 95%;
+        width: 100%;
         background: #fff;
         color: #333;
       }

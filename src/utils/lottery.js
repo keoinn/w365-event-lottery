@@ -17,6 +17,7 @@ class Lottery {
     this.candidates = []; // 候選人
     this.results = []; // 中獎人
     this.temp_winners = []; // 暫存中獎人
+    this.final_results = []; // 最終中獎人
 
     this.prizes_setting_string = ""; // 獎項設定文字
     this.candidates_setting_string = ""; // 候選人設定文字
@@ -30,6 +31,16 @@ class Lottery {
     this.showRotateDiv = false; // 旋轉顯示區
     this.rollingBoard = ""; // 旋轉顯示文字
     this.timer = null; // 計時器
+    this.infoBoxTimer = 500;
+    this.hitsBoxTimer = 500;
+
+
+
+    this.setEventTitle("摸彩活動");
+    this.setInfoBox("");
+    this.setHitsBox(
+      `<span class="hits-box-text"><br><br><br>請按下${KEY_NAME}開始</span>`
+    );
   }
 
   init() {
@@ -45,11 +56,11 @@ class Lottery {
 
     // Init UI and Data
     this.setPrizesSetting();
-    this.setEventTitle("摸彩活動");
-    this.setInfoBox("");
-    this.setHitsBox(
-      `<span class="hits-box-text"><br><br><br><br><br><br><br><br>請按下${KEY_NAME}開始</span>`
-    );
+  }
+
+  updateCandidates(candidates) {
+    this.candidates = [];
+    this.candidates = candidates;
   }
 
   process() {
@@ -74,7 +85,7 @@ class Lottery {
           this.setHitsBox(
             `<span class="hits-box-text">請按下${KEY_NAME}抽出幸運兒</span>`
           );
-        }, 1000);
+        }, this.hitsBoxTimer);
         break;
       case "rotate_stop": // 旋轉停止 = rotate_stop() operation
         this.setHitsBox("");
@@ -95,7 +106,7 @@ class Lottery {
         break;
     }
 
-    console.log(`action: ${this.action} -> ${this.next_action}`);
+    // console.log(`action: ${this.action} -> ${this.next_action}:`, this.candidates);
   }
 
   /**
@@ -106,10 +117,7 @@ class Lottery {
    *    2. 使用 setPrintBox() 顯示獎項表格
    */
   start_lottery() {
-    console.log("start_lottery");
-
     this.setHitsBox("");
-
     this.currentStageBox = "獎項列表";
     let prize_list = [...this.prizes];
     prize_list.reverse();
@@ -127,8 +135,7 @@ class Lottery {
       this.setHitsBox(
         `<span class="hits-box-text"><br>請按下${KEY_NAME}開始</span>`
       );
-    }, 1000);
-    console.log(this.hitsBox);
+    }, this.hitsBoxTimer);
   }
 
   /**
@@ -144,14 +151,13 @@ class Lottery {
     this.setHitsBox("");
     setTimeout(() => {
       this.setCurrentStepBox();
-    }, 1000);
+    }, this.hitsBoxTimer);
 
     setTimeout(() => {
       this.setHitsBox(
         `<span class="hits-box-text"><br><br><br>請按下${KEY_NAME}開始搖獎</span>`
       );
-    }, 2000);
-    console.log("showDrawPrizeInfo");
+    }, this.hitsBoxTimer);
   }
 
   /**
@@ -159,10 +165,11 @@ class Lottery {
    * rotate_run()
    */
   rotate_lottery() {
-    console.log("rotate_lottery");
     this.setInfoBox("");
     this.showRotateDiv = true;
     this.hasCheckedWinners = false;
+
+    this.array_shuffle();
 
     let num_a = parseInt(this.prizes[this.step].num_a_time);
     let size =
@@ -176,12 +183,13 @@ class Lottery {
     if (this.lottery_index >= this.candidates.length) {
       this.lottery_index = 0;
     }
+
     let slice_list = this.array_slice(
       this.candidates,
       this.lottery_index,
       size
     );
-    this.rollingBoard = slice_list.join(", ");
+    this.rollingBoard = slice_list.map(candidate => candidate.name).join(", ");
 
     if (!this.stop) {
       // 未停止 -> 繼續旋轉
@@ -190,12 +198,11 @@ class Lottery {
       }, this.interval);
     } else {
       // 停止 -> 延遲 1 秒後顯示詢問文字
-      console.log(this.lottery_index);
       setTimeout(() => {
         this.setInfoBox(
           `<span class="print-box-text">請問 ${this.rollingBoard} 中獎人是否在現場?</span>`
         );
-      }, 1000);
+      }, this.infoBoxTimer);
     }
   }
 
@@ -204,11 +211,11 @@ class Lottery {
    * selectedWinners()
    */
   selectedWinners() {
-    console.log("selectedWinners");
     // 延遲停止時間
-    let delay_time = 2000;
+    // 2000/0.9 -> 1000/0.8 -> 500/0.7
+    let delay_time = 500;
     // 每次延遲時間減少比例
-    let step_decrease = 0.9;
+    let step_decrease = 0.7;
     this.interval += parseInt(step_decrease * this.interval);
     setTimeout(() => {
       this.interval += parseInt(step_decrease * this.interval);
@@ -235,17 +242,17 @@ class Lottery {
         this.setInfoBox(
           `<span class="print-box-text"><h2>恭喜 ${this.rollingBoard} 中獎</h2></span>`
         );
-      }, 1000);
+      }, this.infoBoxTimer);
     } else {
       this.showRotateDiv = false;
       setTimeout(() => {
         this.setInfoBox(
-          `<span class="print-box-text">那我們重新進行抽獎!</span>`
+          `<span class="print-box-text"><h2>那我們重新進行抽獎!</h2></span>`
         );
         this.setHitsBox(
           `<span class="hits-box-text"><br>請按下${KEY_NAME}繼續</span>`
         );
-      }, 1000);
+      }, this.hitsBoxTimer);
       this.next_action = "rotate_lottery";
       this.interval = 50;
       console.log(`update action: ${this.action} -> ${this.next_action}`);
@@ -261,10 +268,6 @@ class Lottery {
    *        b. 否 -> this.next_action = "rotate_lottery"
    */
   showWinners() {
-    console.log("showWinners");
-    console.log(this.lottery_index);
-    console.log(this.candidates);
-
     // 儲存中獎人
     let num_a = parseInt(this.prizes[this.step].num_a_time);
     let size =
@@ -274,13 +277,19 @@ class Lottery {
       size = num_a;
     }
 
+    let winners = [];
     for (let i = 0; i < size; i++) {
       let index = this.lottery_index + i;
       if (index >= this.candidates.length) {
         index = index - this.candidates.length;
       }
+      winners.push(this.candidates[index]);
       this.results[this.step].push(this.candidates[index]);
     }
+
+    // 從候選人中移除中獎人
+    console.log('winners:', winners);
+    this.candidates = this.candidates.filter(candidate => !winners.includes(candidate));
 
     // 判斷是否還有獎項未抽完
     if (this.results[this.step].length == this.prizes[this.step].num) {
@@ -307,22 +316,22 @@ class Lottery {
    *        b. 否 -> this.next_action = "draw_prize_start"
    */
   showResults() {
-    console.log("showResults");
     // UI 顯示
     this.setInfoBox("");
     this.setHitsBox("");
     this.setCurrentStepBox("");
 
     setTimeout(() => {
-      let current_title = `${this.prizes[this.step - 1].name} - 共 ${
-        this.prizes[this.step - 1].num
-      } 位得主`;
+      // let current_title = `${this.prizes[this.step - 1].name} - 共 ${
+      //   this.prizes[this.step - 1].num
+      // } 位得主`;
+      let current_title = `${this.prizes[this.step - 1].name} - ${this.prizes[this.step - 1].award} `;
       this.setCurrentStepBox(current_title);
       let str = "";
       str +=
-        "<span class='print-box-text winner'>&nbsp;* 中獎名單 *&nbsp;<br/><br/><h2>";
+        "<span class='print-box-text winner'>&nbsp;* 中獎名單 *&nbsp;<br/><h2>";
       this.results[this.step - 1].forEach((winner) => {
-        str += `  ${winner},`;
+        str += `  <span class='winner-name'>${winner.name}</span>`;
       });
       str += "</h2></span>";
       this.setInfoBox(str);
@@ -340,7 +349,7 @@ class Lottery {
           `<span class='hits-box-text'><br>請按下${KEY_NAME}進行下一個獎項的抽獎</span>`
         );
       }
-    }, 2000);
+    }, 1000);
   }
 
   /**
@@ -348,7 +357,6 @@ class Lottery {
    * end_lottery()
    */
   end_lottery() {
-    console.log("end_lottery");
     this.setInfoBox("");
     this.setHitsBox("");
     this.setCurrentStepBox("");
@@ -365,8 +373,16 @@ class Lottery {
       str += `<td>${prize.num}</td>`;
       str += `<td>${prize.award}</td>`;
       str += `<td>`;
+      let final_winners = [];
       result_list[idx].forEach((winner) => {
-        str += `${winner}, `;
+        str += `${winner.name}, `;
+        final_winners.push(winner);
+      });
+      this.final_results.push({
+        name: prize.name,
+        num: prize.num,
+        award: prize.award,
+        winners: final_winners
       });
       str += "</td></tr>";
     });
@@ -380,20 +396,20 @@ class Lottery {
    * @returns {void}
    */
   setCurrentStepBox(text) {
-    console.log("setCurrentStepBox");
     if (text == undefined) {
-      console.log(this.prizes);
-      console.log(this.step);
       let found = this.results[this.step].length;
       let all = parseInt(this.prizes[this.step].num);
       let num_a = parseInt(this.prizes[this.step].num_a_time);
       let b = num_a + found > all ? all : num_a + found;
-      console.log(found, all, num_a, b);
       let str = `${this.prizes[this.step].name} (${
         this.prizes[this.step].num
       } 個`;
       if (num_a != all) {
-        str += `, 抽出第 ${found + 1}~${b} 位中獎人`;
+        if (num_a == 1) {
+          str += `, 抽出第 ${found + 1} 位幸運兒`;
+        } else {
+          str += `, 抽出第 ${found + 1}~${b} 位幸運兒`;
+        }
       }
       str += `)`;
       this.currentStageBox = str;
