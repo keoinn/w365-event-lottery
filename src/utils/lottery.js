@@ -51,16 +51,21 @@ class Lottery {
     this.next_action = "start_lottery";
 
     // Demo Data
-    this.prizes_setting_string = PRIZE_SETTING_STRING;
-    this.candidates_setting_string = CANDIDATES_SETTING_STRING;
+    // this.prizes_setting_string = PRIZE_SETTING_STRING;
+    // this.candidates_setting_string = CANDIDATES_SETTING_STRING;
 
     // Init UI and Data
-    this.setPrizesSetting();
+    // this.setPrizesSetting();
   }
 
   updateCandidates(candidates) {
     this.candidates = [];
     this.candidates = candidates;
+  }
+
+  updatePrizesSetting(setting) {
+    this.prizes_setting_string = "";
+    this.prizes_setting_string = setting;
   }
 
   process() {
@@ -255,7 +260,7 @@ class Lottery {
       }, this.hitsBoxTimer);
       this.next_action = "rotate_lottery";
       this.interval = 50;
-      console.log(`update action: ${this.action} -> ${this.next_action}`);
+      // console.log(`update action: ${this.action} -> ${this.next_action}`);
     }
   }
 

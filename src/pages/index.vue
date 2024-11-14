@@ -1,3 +1,83 @@
+<script setup>
+import { ref, onMounted, watch } from "vue";
+import background_img from "@/assets/forestbridge.jpg";
+import Lottery from "@/utils/lottery";
+import { onKeyStroke } from "@vueuse/core";
+import lottery_bg from "@/assets/lottery_bg.webp";
+import { getLotteryCandidates, getLotteryTicketsNums, storeLotteryFinalResults, getLotterySetting } from "@/utils/requests/apis";
+
+const lottery = ref(new Lottery());
+const showWelcomeBox = ref(true); // 歡迎訊息顯示
+const showCandidatesNum = ref("--"); // 人數
+let timer = null;
+const dialog = ref(true);
+const password = ref("");
+const event_sn = ref("bk2l1va4pf");
+
+const showCurrentCandidatesNum = async () => {
+  const res = await getLotteryTicketsNums({ event_sn: event_sn.value });
+  showCandidatesNum.value = res.data.result;
+}
+
+const checkPassword = async () => {
+  const res = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(password.value));
+  const hashArray = Array.from(new Uint8Array(res));
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+  if (hashHex == "9d49d019f3a9e08b8bfeca58bd6a965127f79a657420a6041401e10c68a79a20") {
+    dialog.value = false;
+  }
+};
+
+watch(dialog, (newVal) => {
+  if(!newVal) {
+    lottery.value.init();
+    showCurrentCandidatesNum();
+    timer = setInterval(() => {
+      showCurrentCandidatesNum()
+    }, 10000);
+  }
+});
+
+onMounted(async () => {
+
+
+  onKeyStroke(["Enter", "B", "b"], async () => {
+    console.log(`action: ${lottery.value.action} -> ${lottery.value.next_action}`);
+    if(dialog.value) {
+      return;
+    } else if (lottery.value.next_action === "start_lottery") {
+      const res = await getLotteryCandidates({ event_sn: event_sn.value });
+      const setting = await getLotterySetting({ event_sn: event_sn.value });
+      console.log(setting.data.result.settings);
+      lottery.value.updateCandidates(res.data.result);
+      lottery.value.updatePrizesSetting(setting.data.result.settings);
+      lottery.value.setPrizesSetting();
+      showWelcomeBox.value = false;
+      clearInterval(timer);
+    } else if (lottery.value.next_action === "check_winners") {
+      lottery.value.hasCheckedWinners = true;
+    } else if (lottery.value.action === "end_lottery") {
+      console.log(lottery.value.final_results);
+      const res = await storeLotteryFinalResults({ event_sn: event_sn.value, result: lottery.value.final_results });
+      console.log(res);
+    }
+
+    lottery.value.process();
+  });
+
+  onKeyStroke(["Escape"], () => {
+    if(dialog.value) {
+      return;
+    } else if (lottery.value.next_action === "check_winners") {
+      lottery.value.hasCheckedWinners = false;
+      lottery.value.process();
+    }
+  });
+
+});
+</script>
 <template>
   <div class="main-view" :style="{ backgroundImage: `url(${background_img})` }">
     <div class="event-app">
@@ -9,6 +89,7 @@
           backgroundSize: 'cover',
           backgroundPosition: 'center',
         }"
+        v-show="!dialog"
       >
         <div
           class="event-title"
@@ -62,64 +143,40 @@
       </div>
     </div>
   </div>
+  <div class="pa-4 text-center">
+    <v-dialog v-model="dialog" max-width="320" persistent>
+      <v-card prepend-icon="mdi-account" title="登入活動">
+        <v-card-text>
+          <v-row dense>
+            <v-col cols="12">
+              <v-text-field
+                v-model="event_sn"
+                label="Event ID"
+                type="text"
+                required
+              ></v-text-field>
+              <v-text-field
+                v-model="password"
+                label="Password"
+                type="password"
+                required
+              ></v-text-field>
+              
+            </v-col>
+          </v-row>
+        </v-card-text>
+        <v-card-actions>
+          <v-btn
+            color="primary"
+            text="開始"
+            variant="tonal"
+            @click="checkPassword()"
+          ></v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+  </div>
 </template>
-
-<script setup>
-import { ref, onMounted } from "vue";
-import background_img from "@/assets/forestbridge.jpg";
-import Lottery from "@/utils/lottery";
-import { onKeyStroke } from "@vueuse/core";
-import lottery_bg from "@/assets/lottery_bg.webp";
-import { getLotteryCandidates, getLotteryTicketsNums, storeLotteryFinalResults } from "@/utils/requests/apis";
-
-const lottery = ref(new Lottery());
-const showWelcomeBox = ref(true); // 歡迎訊息顯示
-const showCandidatesNum = ref("--"); // 人數
-let timer = null;
-
-const showCurrentCandidatesNum = async () => {
-  const res = await getLotteryTicketsNums({ event_sn: "bk2l1va4pf" });
-  showCandidatesNum.value = res.data.result;
-}
-
-onMounted(async () => {
-  const res = await getLotteryCandidates({ event_sn: "bk2l1va4pf" });
-  lottery.value.init();
-  lottery.value.updateCandidates(res.data.result);
-  showCurrentCandidatesNum();
-
-  timer = setInterval(() => {
-    showCurrentCandidatesNum()
-  }, 10000);
-
-  onKeyStroke(["Enter", "B", "b"], async () => {
-    showWelcomeBox.value = false;
-    clearInterval(timer);
-  
-    if (lottery.value.next_action === "check_winners") {
-      lottery.value.hasCheckedWinners = true;
-      lottery.value.process();
-    } else {
-      lottery.value.process();
-    }
-
-    if (lottery.value.action === "end_lottery") {
-      console.log(lottery.value.final_results);
-      const res = await storeLotteryFinalResults({ event_sn: "bk2l1va4pf", result: lottery.value.final_results });
-      console.log(res);
-    }
-  });
-
-  onKeyStroke(["Escape"], () => {
-    if (lottery.value.next_action === "check_winners") {
-      lottery.value.hasCheckedWinners = false;
-      lottery.value.process();
-    }
-  });
-
-});
-</script>
-
 <style lang="scss">
 $event-title-color: #ff0;
 $background-color: #000;
