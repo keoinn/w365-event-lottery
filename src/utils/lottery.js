@@ -30,6 +30,7 @@ class Lottery {
     this.hitsBox = ""; // 提問顯示文字
     this.showRotateDiv = false; // 旋轉顯示區
     this.rollingBoard = ""; // 旋轉顯示文字
+    this.slice_list = null; // 旋轉顯示文字資訊
     this.timer = null; // 計時器
     this.infoBoxTimer = 500;
     this.hitsBoxTimer = 500;
@@ -123,7 +124,6 @@ class Lottery {
     this.setHitsBox("");
     this.currentStageBox = "獎項列表";
     let prize_list = [...this.prizes];
-    prize_list.reverse();
     let str = "<table align='center'>";
     // str += "<tr><th>獎項</th><th>數量</th><th>獎品內容</th></tr>";
     str += "<tr><th>獎項</th><th>數量</th></tr>";
@@ -188,12 +188,12 @@ class Lottery {
       this.lottery_index = 0;
     }
 
-    let slice_list = this.array_slice(
+    this.slice_list = this.array_slice(
       this.candidates,
       this.lottery_index,
       size
     );
-    this.rollingBoard = slice_list
+    this.rollingBoard = this.slice_list
       .map((candidate) => candidate.name)
       .join(", ");
 
@@ -205,8 +205,17 @@ class Lottery {
     } else {
       // 停止 -> 延遲 1 秒後顯示詢問文字
       setTimeout(() => {
+        let group_str = "";
+        if (
+          this.slice_list[0].group == "" ||
+          this.slice_list[0].group == undefined
+        ) {
+          group_str = "";
+        } else {
+          group_str = `(${this.slice_list[0].group.replace("社", "")}社) `;
+        }
         this.setInfoBox(
-          `<span class="print-box-text">請問 ${this.rollingBoard} 中獎人是否在現場?</span>`
+          `<span class="print-box-text">請問<span class="winner-check-name">${group_str}${this.slice_list[0].name}</span>中獎人是否在現場?</span>`
         );
       }, this.infoBoxTimer);
     }
@@ -245,8 +254,17 @@ class Lottery {
       this.next_action = "show_winners";
       this.showRotateDiv = false;
       setTimeout(() => {
+        let group_str = "";
+        if (
+          this.slice_list[0].group == "" ||
+          this.slice_list[0].group == undefined
+        ) {
+          group_str = "";
+        } else {
+          group_str = `(${this.slice_list[0].group.replace("社", "")}社) `;
+        }
         this.setInfoBox(
-          `<span class="print-box-text"><h2>恭喜 <span class="winner-name">${this.rollingBoard}</span> 中獎</h2></span>`
+          `<span class="print-box-text"><h2>恭喜 <span class="winner-name">${group_str}${this.slice_list[0].name}</span> 中獎</h2></span>`
         );
       }, this.infoBoxTimer);
     } else {
@@ -294,7 +312,13 @@ class Lottery {
     }
 
     // 從候選人中移除中獎人
-    console.log("winners:", winners);
+    console.log(
+      `${this.prizes[this.step].name}: `,
+      winners.map(
+        (winner) =>
+          `(${winner.ticket_sn}), ${winner.group}-${winner.name}: ${winner.phone}`
+      )
+    );
     this.candidates = this.candidates.filter(
       (candidate) => !winners.includes(candidate)
     );
@@ -338,24 +362,33 @@ class Lottery {
       this.setCurrentStepBox(current_title);
       let str = "";
       str +=
-        "<span class='print-box-text winner'>&nbsp;* 中獎名單 *&nbsp;<br/><h2>";
-      this.results[this.step - 1].forEach((winner) => {
-        str += `  <span class='winner-name'>${winner.name}</span>`;
+        "<span class='print-box-text winner'>&nbsp;* 中獎名單 *&nbsp;<br/><h3>";
+      this.results[this.step - 1].forEach((winner, idx) => {
+        let group_str = "";
+        if (winner.group == "" || winner.group == undefined) {
+          group_str = "";
+        } else {
+          group_str = `(${winner.group.replace("社", "")}社) `;
+        }
+        if (idx % 2 == 0 && idx != 0) {
+          str += `<br>`;
+        }
+        str += `  <span class='winner-name'>${group_str}${winner.name}</span>`;
       });
-      str += "</h2></span>";
+      str += "</h3></span>";
       this.setInfoBox(str);
 
       // 判斷是否還有獎項未抽完
       if (this.step == this.prizes.length) {
         this.next_action = "end_lottery";
         this.setHitsBox(
-          `<span class='hits-box-text'><br>請按下${KEY_NAME}結束</span>`
+          `<span class='hits-box-text'>請按下${KEY_NAME}結束</span>`
         );
       } else {
         this.interval = 50;
         this.next_action = "draw_prize_start";
         this.setHitsBox(
-          `<span class='hits-box-text'><br>請按下${KEY_NAME}進行下一個獎項的抽獎</span>`
+          `<span class='hits-box-text'>請按下${KEY_NAME}進行下一個獎項的抽獎</span>`
         );
       }
     }, 1000);
@@ -384,8 +417,20 @@ class Lottery {
       // str += `<td>${prize.award}</td>`;
       str += `<td>`;
       let final_winners = [];
-      result_list[idx].forEach((winner) => {
-        str += `${winner.name}, `;
+      result_list[idx].forEach((winner, idx_winner) => {
+        let group_str = "";
+        if (winner.group == "" || winner.group == undefined) {
+          group_str = "";
+        } else {
+          group_str = `(${winner.group.replace("社", "")}社)`;
+        }
+        str += `${group_str}${winner.name}`;
+        if (idx_winner != result_list[idx].length - 1) {
+          str += `, `;
+        }
+        if (idx_winner % 2 == 0 && idx_winner != 0) {
+          str += `<br>`;
+        }
         final_winners.push(winner);
       });
       this.final_results.push({

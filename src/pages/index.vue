@@ -20,7 +20,7 @@ const showWelcomeBox = ref(true); // 歡迎訊息顯示
 const showCandidatesNum = ref("--"); // 人數
 let timer = null;
 const dialog = ref(true);
-const password = ref("");
+const password = ref("w365admin");
 const event_sn = ref("bk2l1va4pf");
 
 const showCurrentCandidatesNum = async () => {
@@ -76,16 +76,26 @@ const changePrizePicBoxSrc = () => {
 };
 
 onMounted(async () => {
-  onKeyStroke(["Enter", "B", "b"], async () => {
-    console.log(
-      `action: ${lottery.value.action} -> ${lottery.value.next_action}`
-    );
+  onKeyStroke(["B", "b"], () => {
+    if (dialog.value) {
+      return;
+    } else if (lottery.value.next_action === "rotate_lottery") {
+      lottery.value.process();
+    } else if (lottery.value.next_action === "rotate_stop") {
+      lottery.value.process();
+    }else{
+      console.log("B Key is pressed");
+      console.log(`action: ${lottery.value.action} -> ${lottery.value.next_action}`);
+    }
+  });
+
+  onKeyStroke(["Enter"], async () => {
+    
     if (dialog.value) {
       return;
     } else if (lottery.value.next_action === "start_lottery") {
       const res = await getLotteryCandidates({ event_sn: event_sn.value });
       const setting = await getLotterySetting({ event_sn: event_sn.value });
-      console.log(setting.data.result.settings);
       lottery.value.updateCandidates(res.data.result);
       lottery.value.updatePrizesSetting(setting.data.result.settings);
       lottery.value.setPrizesSetting();
@@ -99,7 +109,6 @@ onMounted(async () => {
         event_sn: event_sn.value,
         result: lottery.value.final_results,
       });
-      console.log(res);
     }
 
     lottery.value.process();
@@ -359,6 +368,10 @@ $text-winner-color: rgb(255, 51, 61);
           background-color: yellow;
           color: $text-background-color;
         }
+        .winner-check-name {
+          background-color: yellow;
+          color: $text-background-color;
+        }
       }
 
       .winner {
@@ -371,6 +384,7 @@ $text-winner-color: rgb(255, 51, 61);
         width: 100%;
         background: #fff;
         color: #333;
+        font-size: 25px !important;
       }
 
       th,
