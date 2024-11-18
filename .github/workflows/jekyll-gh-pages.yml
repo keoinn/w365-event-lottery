@@ -38,7 +38,7 @@ jobs:
       - name: Setup Pages
         uses: actions/configure-pages@v5
         with:
-          enablement: false
+          enablement: true
       - name: Setip Node
         uses: actions/setup-node@v4
         with:
