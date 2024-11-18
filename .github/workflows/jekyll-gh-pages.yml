@@ -35,11 +35,7 @@ jobs:
           branch_name: gh-pages 
       - name: Checkout
         uses: actions/checkout@v4
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-      - name: Setip Node
+      - name: Setup Node
         uses: actions/setup-node@v4
         with:
           node-version: 20
