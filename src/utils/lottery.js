@@ -2,7 +2,7 @@ const PRIZE_SETTING_STRING =
   "特別獎|4|1|遠東集團2000元禮券/每人\n\n二獎|2|1|5萬元紅包/每人\n頭獎|1|1|東京來回機票";
 const CANDIDATES_SETTING_STRING =
   "Tom, Marry, Jim, Robin \n Lucy, Lily, Lilei, Hanmeimei\nCatherine, Linton, Lockwood\nCharly, Bill, Emily, Penny\nRose, Jen, William, Philips\nHitler, Stalin";
-const KEY_NAME = " Enter鍵 ";
+const KEY_NAME = "遙控";
 
 class Lottery {
   constructor() {
@@ -34,9 +34,7 @@ class Lottery {
     this.infoBoxTimer = 500;
     this.hitsBoxTimer = 500;
 
-
-
-    this.setEventTitle("摸彩活動");
+    this.setEventTitle("摸彩");
     this.setInfoBox("");
     this.setHitsBox(
       `<span class="hits-box-text"><br><br><br>請按下${KEY_NAME}開始</span>`
@@ -127,11 +125,12 @@ class Lottery {
     let prize_list = [...this.prizes];
     prize_list.reverse();
     let str = "<table align='center'>";
-    str += "<tr><th>獎項</th><th>數量</th><th>獎品內容</th></tr>";
+    // str += "<tr><th>獎項</th><th>數量</th><th>獎品內容</th></tr>";
+    str += "<tr><th>獎項</th><th>數量</th></tr>";
     prize_list.forEach((prize) => {
       str += `<tr><td>${prize.name}</td>`;
       str += `<td>${prize.num}</td>`;
-      str += `<td>${prize.award}</td>`;
+      // str += `<td>${prize.award}</td>`;
       str += "</tr>";
     });
     str += "</table>";
@@ -160,7 +159,7 @@ class Lottery {
 
     setTimeout(() => {
       this.setHitsBox(
-        `<span class="hits-box-text"><br><br><br>請按下${KEY_NAME}開始搖獎</span>`
+        `<span class="hits-box-text">請按下${KEY_NAME}開始搖獎</span>`
       );
     }, this.hitsBoxTimer);
   }
@@ -194,7 +193,9 @@ class Lottery {
       this.lottery_index,
       size
     );
-    this.rollingBoard = slice_list.map(candidate => candidate.name).join(", ");
+    this.rollingBoard = slice_list
+      .map((candidate) => candidate.name)
+      .join(", ");
 
     if (!this.stop) {
       // 未停止 -> 繼續旋轉
@@ -245,7 +246,7 @@ class Lottery {
       this.showRotateDiv = false;
       setTimeout(() => {
         this.setInfoBox(
-          `<span class="print-box-text"><h2>恭喜 ${this.rollingBoard} 中獎</h2></span>`
+          `<span class="print-box-text"><h2>恭喜 <span class="winner-name">${this.rollingBoard}</span> 中獎</h2></span>`
         );
       }, this.infoBoxTimer);
     } else {
@@ -293,8 +294,10 @@ class Lottery {
     }
 
     // 從候選人中移除中獎人
-    console.log('winners:', winners);
-    this.candidates = this.candidates.filter(candidate => !winners.includes(candidate));
+    console.log("winners:", winners);
+    this.candidates = this.candidates.filter(
+      (candidate) => !winners.includes(candidate)
+    );
 
     // 判斷是否還有獎項未抽完
     if (this.results[this.step].length == this.prizes[this.step].num) {
@@ -330,7 +333,8 @@ class Lottery {
       // let current_title = `${this.prizes[this.step - 1].name} - 共 ${
       //   this.prizes[this.step - 1].num
       // } 位得主`;
-      let current_title = `${this.prizes[this.step - 1].name} - ${this.prizes[this.step - 1].award} `;
+      // let current_title = `${this.prizes[this.step - 1].name} - ${this.prizes[this.step - 1].award} `;
+      let current_title = `${this.prizes[this.step - 1].name}`;
       this.setCurrentStepBox(current_title);
       let str = "";
       str +=
@@ -371,12 +375,13 @@ class Lottery {
     let result_list = [...this.results];
     result_list.reverse();
     let str = "<table align='center'>";
-    str +=
-      "<tr><th>獎項</th><th>數量</th><th>獎品內容</th><th>中獎人</th></tr>";
+    // str +=
+    //   "<tr><th>獎項</th><th>數量</th><th>獎品內容</th><th>中獎人</th></tr>";
+    str += "<tr><th>獎項</th><th>數量</th><th>中獎人</th></tr>";
     prize_list.reverse().forEach((prize, idx) => {
       str += `<tr><td>${prize.name}</td>`;
       str += `<td>${prize.num}</td>`;
-      str += `<td>${prize.award}</td>`;
+      // str += `<td>${prize.award}</td>`;
       str += `<td>`;
       let final_winners = [];
       result_list[idx].forEach((winner) => {
@@ -387,7 +392,7 @@ class Lottery {
         name: prize.name,
         num: prize.num,
         award: prize.award,
-        winners: final_winners
+        winners: final_winners,
       });
       str += "</td></tr>";
     });
@@ -408,12 +413,12 @@ class Lottery {
       let b = num_a + found > all ? all : num_a + found;
       let str = `${this.prizes[this.step].name} (${
         this.prizes[this.step].num
-      } 個`;
+      }份`;
       if (num_a != all) {
         if (num_a == 1) {
-          str += `, 抽出第 ${found + 1} 位幸運兒`;
+          str += `,第${found + 1}位幸運兒`;
         } else {
-          str += `, 抽出第 ${found + 1}~${b} 位幸運兒`;
+          str += `, 抽出第${found + 1}~${b}位幸運兒`;
         }
       }
       str += `)`;
