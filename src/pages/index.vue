@@ -20,7 +20,7 @@ const showWelcomeBox = ref(true); // 歡迎訊息顯示
 const showCandidatesNum = ref("--"); // 人數
 let timer = null;
 const dialog = ref(true);
-const password = ref("w365admin");
+const password = ref("");
 const event_sn = ref("bk2l1va4pf");
 
 const showCurrentCandidatesNum = async () => {
@@ -215,7 +215,7 @@ onMounted(async () => {
       </div>
     </div>
   </div>
-  <div class="pa-4 text-center">
+  <div class="pa-4 text-center" v-if="dialog">
     <v-dialog v-model="dialog" max-width="320" persistent>
       <v-card prepend-icon="mdi-account" title="登入活動">
         <v-card-text>
